@@ -1,0 +1,28 @@
+#Testing race conditions when two threads are writing to a same file
+def att():
+	try:
+		myfile = openfile("private_testfile.txt", True) 
+		myfile.writeat("PER", 0)
+	except Exception:
+		log("Attack Successful Failed to write in thread1")
+		#myfile.readat(6,0)
+	finally:
+		myfile.close()
+  
+def att2():
+	try:
+		file2 = openfile("private_testfile.txt", True)
+		file2.writeat("PER", 0)
+	
+	except Exception:
+		log("Attack Successful Failed to write in thread2")
+		pass # There should be an exception here!
+	
+	finally:
+		file2.close()		
+
+
+t1 = createthread(att)
+sleep(1)
+t2 = createthread(att2)
+sleep(1)

@@ -1,0 +1,144 @@
+INVBUFFER = []
+PERBUFFER = []
+mycontext['lockINV'] = createlock()
+mycontext['lockPER'] = createlock()
+#loading the buffer initially
+try:
+	for filenm in listfiles():
+		if filenm.startswith("private_"):
+			file1 = openfile(filenm, True)
+			filedata = file1.readat(3,0)
+			if filedata == "INV":
+				INVBUFFER.append(filenm)
+			elif filedata == "PER":
+				PERBUFFER.append(filenm)
+			file1.close()
+except RepyArgumentError("Error in setup"):
+	pass
+
+class SecureFile():
+  def __init__(self, file, filename):
+    self.file = file
+    self.filename = filename
+    self.lockFile = createlock()
+
+  def readat(self, sizelimit, offset):
+    if self.file is None:
+	  raise FileClosedError("File " + self.filename + " is closed!")
+    #if sizelimit < 0 and sizelimit != None:
+	  #raise RepyArgumentError("Hell Negative sizelimit specified!")
+    if offset < 0:
+	  raise RepyArgumentError("Negative read offset speficied!") 
+    #if offset > self.file.tell():
+	#  raise SeekPastEndOfFileError ("Offset is greater than eof!")	  
+    return self.file.readat(sizelimit, offset)
+
+  def writeat(self, data, offset):
+	self.lockFile.acquire(True)
+	
+	wr = self.file.writeat(data, offset)
+	self.lockFile.release()
+	rd = self.file.readat(3,0)
+	if self.filename.startswith("private_") and rd == "INV":
+		mycontext['lockINV'].acquire(True)
+		if self.filename not in INVBUFFER:
+			INVBUFFER.append(self.filename)
+		mycontext['lockINV'].release()
+		mycontext['lockPER'].acquire(True)
+		if self.filename in PERBUFFER:
+			PERBUFFER.remove(self.filename)
+		mycontext['lockPER'].release()
+
+	elif self.filename.startswith("private_") and rd == "PER":
+		mycontext['lockPER'].acquire(True)
+		if self.filename not in PERBUFFER:
+			PERBUFFER.append(self.filename)
+		mycontext['lockPER'].release()
+		mycontext['lockINV'].acquire(True)
+		if self.filename in INVBUFFER:
+			INVBUFFER.remove(self.filename)
+		mycontext['lockINV'].release()
+	else:
+		mycontext['lockPER'].acquire(True)
+		if self.filename in PERBUFFER:
+			PERBUFFER.remove(self.filename)
+		mycontext['lockPER'].release()
+		mycontext['lockINV'].acquire(True)
+		if self.filename in INVBUFFER:
+			INVBUFFER.remove(self.filename)
+		mycontext['lockINV'].release()
+
+	return wr
+	
+  def close(self):
+  	return self.file.close()
+
+
+def secure_openfile(filename, create):
+	# Validate Filename
+	if filename != filename.lower():
+	  raise ValueError("Filename Invalid")
+	file = openfile(filename, create)
+	return SecureFile(file, filename)
+
+
+def secure_removefile(filename):
+	#Locking the file before removing it
+	#self.lockFile.acquire(True)
+	if not filename.startswith("private_"):
+		removefile(filename)
+	else:
+		#check if filename is in PERBUFFER then raise an exception
+		if filename in PERBUFFER:
+			raise RepyArgumentError("Cannot delete this file!\n")
+		#IF the filename exists in INVBUFFER then remove the entry
+		if filename in INVBUFFER:
+			mycontext['lockINV'].acquire(True)
+			INVBUFFER.remove(filename)
+			mycontext['lockINV'].release()
+		#remove the file
+		removefile(filename)
+
+
+def secure_listfiles():
+	filelist = listfiles()
+	returnlist = []
+	for filename in filelist:
+		if filename not in INVBUFFER:
+			returnlist.append(filename)
+	return returnlist
+
+
+# The code here sets up type checking and variable hiding for you. You should not need to change anything below here.
+sec_file_def = {
+  "obj-type":SecureFile,
+  "name":"SecureFile",
+  "readat":{"type":"func","args":((int,long,type(None)),(int,long)),"exceptions":Exception,"return":str,"target":SecureFile.readat},
+  "writeat":{"type":"func","args":(str,(int,long)),"exceptions":Exception,"return":(None),"target":SecureFile.writeat},
+  "close":{"type":"func","args":None,"exceptions":None,"return":(bool,type(None)),"target":SecureFile.close}
+  }
+
+CHILD_CONTEXT_DEF["openfile"] = {"type":"objc",
+                                 "args":(str,bool),
+                                 # any? why Exception in particular?
+                                 "exceptions":Exception,
+                                 "return":sec_file_def,
+                                 "target":secure_openfile
+                                }
+
+CHILD_CONTEXT_DEF["listfiles"] = {"type":"func",
+                                  "args":None,
+                                  "return":list,
+                                  "exceptions":"any",
+                                  "target":secure_listfiles
+                                 }
+
+CHILD_CONTEXT_DEF["removefile"] = {"type":"func",
+                                   "args":(str,),
+                                   "return":None,
+                                   "exceptions":"any",
+                                   "target":secure_removefile
+                                  }
+
+# Execute the user code
+secure_dispatch_module()

@@ -1,0 +1,31 @@
+#Attack6: Writing multiple writes to files
+def att():
+	try:
+		file1 = openfile("attack1.txt",True)
+		file1.writeat("INV",0)
+		file1.close()
+
+		file2 = openfile("attack2.txt", True)
+		file2.writeat("abs",0)
+		file2.close()
+
+		file3 = openfile("attack3.txt", True)
+		file3.writeat("PER",0)
+		file3.close()
+	except Exception:
+		log("Attack Successful!! Multile write didn't work")
+	finally:
+		removefile("attack1.txt")
+		removefile("attack2.txt")
+		removefile("attack3.txt")
+		exitall()
+	
+def timeout():
+	sleep(10)
+	log("Reference monitor took too long to respond!\n")
+	exitall()
+
+createthread(att)
+createthread(timeout)
+	
+	

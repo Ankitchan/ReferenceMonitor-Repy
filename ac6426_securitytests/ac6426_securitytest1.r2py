@@ -1,0 +1,10 @@
+
+#Delete a private_ file deletes only if it contains INV
+try:
+  removefile("private_testfile.txt")
+except RepyArgumentError:
+  pass # There should be an exception here!
+else:
+  log("ERROR! Allowed me to delete the file.\n")
+
+

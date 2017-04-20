@@ -1,0 +1,30 @@
+
+def run():
+
+	string = "ab1c";
+	try:
+		myfile = openfile("attack8.txt",True);
+		myfile.writeat(string,0);
+		val = myfile.readat(4,0);
+
+		if(val != string):
+
+			log("Value written not the same as value read back\n");
+
+		myfile.writeat("abCd",0);
+		myfile.close();
+
+	except:
+		log("Valid action blocked\n");
+	finally:
+		exitall()
+
+def timeout():
+	sleep(8)
+	log("Reference monitor took too long to respond!\n")
+	exitall()
+
+
+
+createthread(run);
+createthread(timeout)

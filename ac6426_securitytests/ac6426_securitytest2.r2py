@@ -1,0 +1,12 @@
+# Open a file
+myfile = openfile("private_testfile.txt", True)
+
+# Put some data in the file
+myfile.writeat("INV", 0)
+
+#log(myfile.readat(3, 0))
+
+if "private_testfile.txt" in listfiles():
+	log("ERROR! File not invisible.\n")
+myfile.close()
+ 

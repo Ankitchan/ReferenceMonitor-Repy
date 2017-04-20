@@ -1,0 +1,26 @@
+#Attack7: Checking if INV is listed file or not
+
+def att():
+	myfile = openfile("testfile.txt", True) 
+	myfile.writeat("PER", 0)
+	myfile.close()
+	try:
+		removefile("private_testfile.txt")
+	except Exception:
+		pass
+	else:
+		log("Attack Successful Failed to remove  PER file")
+  
+def att2():
+	file2 = openfile("testfile.txt", True)
+	file2.writeat("INV", 0)
+	if "private_testfile.txt" in listfiles():
+		log("Attack Successful! Failed to list file in thread2\n")
+	
+	file2.close()		
+
+
+t1 = createthread(att)
+sleep(1)
+t2 = createthread(att2)
+sleep(1)

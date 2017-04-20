@@ -1,0 +1,18 @@
+
+#Reference monitor should be able to read or write to a file
+
+myfile = openfile("testfile.txt",True)
+try:
+	myfile.writeat("BCvdfdRTR",0)
+	myfile.readat(30,50)
+except RepyArgumentError:
+	#if reference monitor is successful, this should fail
+	pass
+
+else:
+	#If reference monitor layer fails
+	log("Reference monitor failed")
+finally:
+	myfile.close()
+	removefile("testfile.txt")
+

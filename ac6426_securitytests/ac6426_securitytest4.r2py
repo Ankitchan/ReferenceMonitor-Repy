@@ -1,0 +1,32 @@
+
+def att():
+	myfile = openfile("private_testfile.txt", True) 
+	myfile.writeat("PER", 0)
+	myfile.readat(6,0)
+	
+  
+	#myfile.close()
+	try:
+		removefile("private_testfile.txt")
+	except RepyArgumentError:
+		pass # There should be an exception here!
+		
+	else:
+		log("Woah! Attacked Allowed me to delete private file.in thread 1\n")	
+def att2():
+	file2 = openfile("private_testfile.txt", True)
+	file2.readat(4,0)
+	file2.close()
+	try:
+		removefile("private_testfile.txt")
+	except RepyArgumentError:
+		pass # There should be an exception here!
+		
+	else:
+		log("Woah! Attacked Allowed me to delete private  file in thread 2\n")	
+
+
+t1 = createthread(att)
+sleep(1)
+t2 = createthread(att2)
+sleep(1)
